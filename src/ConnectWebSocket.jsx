@@ -1,26 +1,24 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import ImageTag from './ImageTag';
-
-const maxImageBuffer = 40; // Limit the number of buffered images
 
 function ConnectWebSocket({ data, onDisconnect }) {
   const [imageQueue, setImageQueue] = useState([]);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [frameLoss, setFrameLoss] = useState(0);
 
   const ws = useMemo(() => new WebSocket(data.wsUrl), [data]);
+  let bufferImages = [];
+  let startBufferTime = Date.now();
+
   useEffect(() => {
     ws.addEventListener('open', () => {
       console.log('Connected to WebSocket server');
     });
 
     ws.addEventListener('message', (event) => {
-      const data = event.data;
-      if (data instanceof Blob) {
-        setImageQueue((prevImageQueue) => {
-          const updatedQueue = [...prevImageQueue, data];
-          manageImageBuffer(updatedQueue);
-          return updatedQueue;
-        });
+      const imageData = event.data;
+      if (imageData instanceof Blob) {
+        manageImageBuffer(imageData, Date.now());
       }
     });
 
@@ -42,10 +40,15 @@ function ConnectWebSocket({ data, onDisconnect }) {
     if (ws.readyState === ws.OPEN) ws.close();
     onDisconnect();
   }
-  function manageImageBuffer(updatedQueue) {
-    if (updatedQueue.length > maxImageBuffer) {
-      updatedQueue.shift();
-      setImageQueue(updatedQueue);
+
+  function manageImageBuffer(imageData, timeStamp) {
+    if (bufferImages.length >= data.frameRate) {
+      setImageQueue([...bufferImages]);
+      bufferImages = [imageData];
+      setFrameLoss(100 - (timeStamp - startBufferTime) / 10);
+      startBufferTime = timeStamp;
+    } else {
+      bufferImages.push(imageData);
     }
   }
 
@@ -59,8 +62,9 @@ function ConnectWebSocket({ data, onDisconnect }) {
           <h2>Loading...</h2>
         ) : (
           <>
+            <h3>Frame Loss = {Math.round(frameLoss)} %</h3>
             <div id='imageContainer'>
-              <ImageTag bufferImage={imageQueue} />
+              <ImageTag bufferImages={imageQueue} frameRate={data.frameRate} />
             </div>
             <button
               type='button'

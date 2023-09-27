@@ -32,7 +32,7 @@ function UrlForm({ data, setData, onSubmit }) {
         onChange={(e) => setData({ ...data, frameRate: e.target.value })}
         aria-describedby='helper-text-explanation'
         className='bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5'
-        placeholder='ws://XXX.XXX...'
+        placeholder='22'
       />
       <div className='w-full flex justify-center items-center'>
         <button

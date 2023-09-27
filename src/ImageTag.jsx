@@ -1,25 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 
-function ImageTag({ bufferImage }) {
+const ImageTag = memo(function ImageTag({ bufferImages, frameRate }) {
   const imageTag = useRef();
+  
   useEffect(() => {
-    if (!bufferImage.length) {
+    if (!bufferImages.length) {
       return;
     }
-    const timeout = setTimeout(() => {
-      const imageBlob = bufferImage.shift();
+    const interval = setInterval(() => {
+      const imageBlob = bufferImages.shift();
       imageTag.current.src && URL.revokeObjectURL(imageTag.current.src);
       imageTag.current.src = URL.createObjectURL(imageBlob);
-    }, 1000 / 60);
+    }, 1000 / frameRate);
     return () => {
-      if (timeout) clearTimeout(timeout);
+      if (interval) clearInterval(interval);
     };
-  }, [bufferImage]);
+  }, [bufferImages]);
 
   return (
     <>
       <img src='' ref={imageTag} />
     </>
   );
-}
+});
 export default ImageTag;
